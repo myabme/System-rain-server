@@ -17,7 +17,7 @@ async def on_ready():
     for guild in client.guilds:
         try: invites[guild.id] = await guild.invites()
         except: pass
-    print(f"✅ سيستم Rain الخاص بـ أبو مشاري شغال!")
+    print(f"✅ سيستم Rain الخاص بـ فهد شغال!")
 
 @client.event
 async def on_member_join(member):
@@ -35,7 +35,7 @@ async def on_member_join(member):
     embed = discord.Embed(description=f"**hey : {member.mention}**\n**by : {inviter}**", color=BLACK_COLOR)
     await channel.send(embed=embed)
 
-# --- نظام الأوامر بدون بريفكس (تكتب الكلمة وبس) ---
+# --- نظام الأوامر بدون بريفكس (بدون !) ---
 @client.event
 async def on_message(message):
     if message.author == client.user: return
@@ -48,21 +48,21 @@ async def on_message(message):
     if cmd == "مسح" and message.author.guild_permissions.manage_messages:
         amount = int(content[1]) if len(content) > 1 else 10
         await message.channel.purge(limit=amount + 1)
-        await message.channel.send(f"🧹 تم المسح لعيون أبو مشاري ({amount} رسالة).", delete_after=3)
+        await message.channel.send(f"🧹 تم المسح لعيون فهد.", delete_after=3)
 
     # بنعالي (بان)
     if cmd == "بنعالي" and message.author.guild_permissions.ban_members:
         member = message.mentions[0] if message.mentions else None
         if member:
             await member.ban()
-            await message.channel.send(embed=discord.Embed(description=f"💀 تم إعطاء {member.mention} بنعالي.", color=BLACK_COLOR))
+            await message.channel.send(f"💀 تم إعطاء {member.mention} بنعالي لعيون فهد.")
 
     # طرد (كيك)
     if cmd == "طرد" and message.author.guild_permissions.kick_members:
         member = message.mentions[0] if message.mentions else None
         if member:
             await member.kick()
-            await message.channel.send(embed=discord.Embed(description=f"🚪 تم طرد {member.mention}.", color=BLACK_COLOR))
+            await message.channel.send(f"🚪 تم طرد {member.mention} لعيون فهد.")
 
     # مزعج (تايم أوت)
     if cmd == "مزعج" and message.author.guild_permissions.moderate_members:
@@ -70,14 +70,14 @@ async def on_message(message):
         time = int(content[2]) if len(content) > 2 else 10
         if member:
             await member.timeout(datetime.timedelta(minutes=time))
-            await message.channel.send(embed=discord.Embed(description=f"⏳ {member.mention} صار مزعج ({time}د).", color=BLACK_COLOR))
+            await message.channel.send(f"⏳ {member.mention} صار مزعج لعيون فهد.")
 
     # انطق (فك التايم أوت)
     if cmd == "انطق" and message.author.guild_permissions.moderate_members:
         member = message.mentions[0] if message.mentions else None
         if member:
             await member.timeout(None)
-            await message.channel.send(embed=discord.Embed(description=f"🔊 {member.mention} انطق يا بطل.", color=BLACK_COLOR))
+            await message.channel.send(f"🔊 {member.mention} انطق لعيون فهد.")
 
     # ر (رتبة)
     if cmd == "ر" and message.author.guild_permissions.manage_roles:
@@ -86,17 +86,17 @@ async def on_message(message):
         if member and role:
             if role in member.roles:
                 await member.remove_roles(role)
-                await message.channel.send(f"✅ سحبنا {role.name} من {member.display_name}")
+                await message.channel.send(f"✅ سحبنا {role.name} من {member.display_name} لعيون فهد.")
             else:
                 await member.add_roles(role)
-                await message.channel.send(f"✅ عطينا {role.name} لـ {member.display_name}")
+                await message.channel.send(f"✅ عطينا {role.name} لـ {member.display_name} لعيون فهد.")
 
     await client.process_commands(message)
 
-# --- أمر المساعدة المحدث ---
+# --- أمر المساعدة ---
 @client.command(name="مساعدة")
 async def help_cmd(ctx):
-    embed = discord.Embed(title="قائمة أوامر Rain 🏴", color=BLACK_COLOR)
+    embed = discord.Embed(title="قائمة أوامر Rain", color=BLACK_COLOR)
     embed.add_field(name="الأوامر (بدون !)", value="""
 `بنعالي @الشخص` - حظر نهائي
 `طرد @الشخص` - طرد
@@ -105,7 +105,7 @@ async def help_cmd(ctx):
 `مسح العدد` - مسح الشات
 `ر @الشخص @الرتبة` - سحب أو إعطاء رتبة
     """, inline=False)
-    # التوقيع الخاص بك يا wilked
+    # التوقيع ما لمسته
     embed.set_footer(text="Developed by Wilked")
     await ctx.send(embed=embed)
 
