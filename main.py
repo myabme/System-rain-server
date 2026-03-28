@@ -17,7 +17,7 @@ async def on_ready():
     for guild in client.guilds:
         try: invites[guild.id] = await guild.invites()
         except: pass
-    print(f"✅ سيستم أبو مشاري الزاحف شغال!")
+    print(f"✅ سيستم Rain الخاص بـ أبو مشاري شغال!")
 
 @client.event
 async def on_member_join(member):
@@ -93,10 +93,10 @@ async def on_message(message):
 
     await client.process_commands(message)
 
-# --- أمر المساعدة ---
+# --- أمر المساعدة المحدث ---
 @client.command(name="مساعدة")
 async def help_cmd(ctx):
-    embed = discord.Embed(title="قائمة أوامر أبو مشاري 🏴", color=BLACK_COLOR)
+    embed = discord.Embed(title="قائمة أوامر Rain 🏴", color=BLACK_COLOR)
     embed.add_field(name="الأوامر (بدون !)", value="""
 `بنعالي @الشخص` - حظر نهائي
 `طرد @الشخص` - طرد
@@ -105,7 +105,8 @@ async def help_cmd(ctx):
 `مسح العدد` - مسح الشات
 `ر @الشخص @الرتبة` - سحب أو إعطاء رتبة
     """, inline=False)
-    embed.set_footer(text="System Developed for Abu Meshari")
+    # التوقيع الخاص بك يا wilked
+    embed.set_footer(text="Developed by Wilked")
     await ctx.send(embed=embed)
 
 token = os.getenv('DISCORD_TOKEN')
