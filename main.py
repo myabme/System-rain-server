@@ -1,113 +1,114 @@
 import discord
 from discord.ext import commands
-import json
-import os
 import datetime
+import os
 
 # --- الإعدادات ---
-intents = discord.Intents.all() # لازم تفعل الـ Intents من صفحة المطورين (Discord Developer Portal)
+intents = discord.Intents.all()
+# خليت البريفكس ! عشان أمر المساعدة بس، والباقي بنخليه يقرأ الكلام مباشرة
 client = commands.Bot(command_prefix="!", intents=intents)
 
-BLACK_COLOR = 0x000001 # لون أسود فخم
+BLACK_COLOR = 0x000001
+WELCOME_CHANNEL_ID = 1453704693770616904 
 
-# ملف لحفظ بيانات الترحيب
-DATA_FILE = "welcome_data.json"
-
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f)
-
-def load_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-# --- أوامر الإدارة (بالعربي) ---
-
-@client.command(name="باند")
-@commands.has_permissions(ban_members=True)
-async def ban(ctx, member: discord.Member, *, reason=None):
-    await member.ban(reason=reason)
-    embed = discord.Embed(description=f"✅ تم طرد {member.mention} نهائياً (باند).", color=BLACK_COLOR)
-    await ctx.send(embed=embed)
-
-@client.command(name="كيك")
-@commands.has_permissions(kick_members=True)
-async def kick(ctx, member: discord.Member, *, reason=None):
-    await member.kick(reason=reason)
-    embed = discord.Embed(description=f"✅ تم طرد {member.mention} من السيرفر.", color=BLACK_COLOR)
-    await ctx.send(embed=embed)
-
-@client.command(name="اسكت") # ميوت (إخفاء الشات عنه)
-@commands.has_permissions(manage_roles=True)
-async def mute(ctx, member: discord.Member):
-    overwrite = ctx.channel.overwrites_for(member)
-    overwrite.send_messages = False
-    await ctx.channel.set_permissions(member, overwrite=overwrite)
-    embed = discord.Embed(description=f"🔇 {member.mention} صار عليه ميوت في هذا الروم.", color=BLACK_COLOR)
-    await ctx.send(embed=embed)
-
-@client.command(name="تكلم") # فك الميوت
-@commands.has_permissions(manage_roles=True)
-async def unmute(ctx, member: discord.Member):
-    overwrite = ctx.channel.overwrites_for(member)
-    overwrite.send_messages = None
-    await ctx.channel.set_permissions(member, overwrite=overwrite)
-    embed = discord.Embed(description=f"🔊 {member.mention} يقدر يتكلم الحين.", color=BLACK_COLOR)
-    await ctx.send(embed=embed)
-
-@client.command(name="تايم_اوت")
-@commands.has_permissions(moderate_members=True)
-async def timeout(ctx, member: discord.Member, minutes: int, *, reason=None):
-    duration = datetime.timedelta(minutes=minutes)
-    await member.timeout(duration, reason=reason)
-    embed = discord.Embed(description=f"⏳ تم إعطاء {member.mention} وقت مستقطع لمدة {minutes} دقيقة.", color=BLACK_COLOR)
-    await ctx.send(embed=embed)
-
-@client.command(name="تغيير_اسم")
-@commands.has_permissions(manage_nicknames=True)
-async def nick(ctx, member: discord.Member, *, new_name):
-    await member.edit(nick=new_name)
-    embed = discord.Embed(description=f"✅ تم تغيير اسم {member.mention} إلى **{new_name}**", color=BLACK_COLOR)
-    await ctx.send(embed=embed)
-
-@client.command(name="مسح")
-@commands.has_permissions(manage_messages=True)
-async def clear(ctx, amount: int):
-    await ctx.channel.purge(limit=amount + 1)
-    embed = discord.Embed(description=f"🧹 تم مسح {amount} رسالة.", color=BLACK_COLOR)
-    await ctx.send(embed=embed, delete_after=5)
-
-# --- نظام الترحيب المطور ---
-
-@client.command(name="ترحيب")
-@commands.has_permissions(administrator=True)
-async def set_welcome(ctx, *, message):
-    data = load_data()
-    data[str(ctx.guild.id)] = {
-        "message": message,
-        "channel_id": ctx.channel.id
-    }
-    save_data(data)
-    embed = discord.Embed(description=f"✅ تم تعيين رسالة الترحيب في هذا الروم:\n**{message}**", color=BLACK_COLOR)
-    await ctx.send(embed=embed)
-
-@client.event
-async def on_member_join(member):
-    data = load_data()
-    guild_data = data.get(str(member.guild.id))
-    if guild_data:
-        channel = member.guild.get_channel(guild_data["channel_id"])
-        if channel:
-            msg = guild_data["message"].replace("[user]", member.mention).replace("[server]", member.guild.name)
-            embed = discord.Embed(title="ترحيب جديد", description=msg, color=BLACK_COLOR)
-            embed.set_thumbnail(url=member.avatar.url if member.avatar else None)
-            await channel.send(embed=embed)
+invites = {}
 
 @client.event
 async def on_ready():
-    print(f"✅ سيستم الإدارة جاهز باسم: {client.user}")
+    for guild in client.guilds:
+        try: invites[guild.id] = await guild.invites()
+        except: pass
+    print(f"✅ سيستم مشاري الزاحف شغال!")
+
+@client.event
+async def on_member_join(member):
+    channel = client.get_channel(WELCOME_CHANNEL_ID)
+    if not channel: return
+    invites_before = invites.get(member.guild.id, [])
+    invites_after = await member.guild.invites()
+    invites[member.guild.id] = invites_after
+    inviter = "غير معروف"
+    for invite in invites_before:
+        for new_invite in invites_after:
+            if invite.code == new_invite.code and invite.uses < new_invite.uses:
+                inviter = invite.inviter.mention
+                break
+    embed = discord.Embed(description=f"**hey : {member.mention}**\n**by : {inviter}**", color=BLACK_COLOR)
+    await channel.send(embed=embed)
+
+# --- نظام الأوامر بدون بريفكس (بدون !) ---
+@client.event
+async def on_message(message):
+    if message.author == client.user: return
+    
+    content = message.content.split()
+    if not content: return
+    cmd = content[0] # الكلمة الأولى
+
+    # أمر مسح
+    if cmd == "مسح" and message.author.guild_permissions.manage_messages:
+        amount = int(content[1]) if len(content) > 1 else 10
+        await message.channel.purge(limit=amount + 1)
+        await message.channel.send(f"🧹 تم مسح {amount} رسالة.", delete_after=3)
+
+    # أمر بنعالي (بان)
+    if cmd == "بنعالي" and message.author.guild_permissions.ban_members:
+        member = message.mentions[0] if message.mentions else None
+        if member:
+            await member.ban()
+            await message.channel.send(embed=discord.Embed(description=f"💀 تم إعطاء {member.mention} بنعالي.", color=BLACK_COLOR))
+
+    # أمر طرد (كيك)
+    if cmd == "طرد" and message.author.guild_permissions.kick_members:
+        member = message.mentions[0] if message.mentions else None
+        if member:
+            await member.kick()
+            await message.channel.send(embed=discord.Embed(description=f"🚪 تم طرد {member.mention}.", color=BLACK_COLOR))
+
+    # أمر مزعج (تايم أوت)
+    if cmd == "مزعج" and message.author.guild_permissions.moderate_members:
+        member = message.mentions[0] if message.mentions else None
+        time = int(content[2]) if len(content) > 2 else 10
+        if member:
+            await member.timeout(datetime.timedelta(minutes=time))
+            await message.channel.send(embed=discord.Embed(description=f"⏳ {member.mention} صار مزعج ({time}د).", color=BLACK_COLOR))
+
+    # أمر انطق (فك التايم أوت)
+    if cmd == "انطق" and message.author.guild_permissions.moderate_members:
+        member = message.mentions[0] if message.mentions else None
+        if member:
+            await member.timeout(None)
+            await message.channel.send(embed=discord.Embed(description=f"🔊 {member.mention} انطق يا بطل.", color=BLACK_COLOR))
+
+    # أمر ر (رتبة)
+    if cmd == "ر" and message.author.guild_permissions.manage_roles:
+        member = message.mentions[0] if message.mentions else None
+        role = message.role_mentions[0] if message.role_mentions else None
+        if member and role:
+            if role in member.roles:
+                await member.remove_roles(role)
+                await message.channel.send(f"✅ تم سحب {role.name} من {member.display_name}")
+            else:
+                await member.add_roles(role)
+                await message.channel.send(f"✅ تم إعطاء {role.name} لـ {member.display_name}")
+
+    await client.process_commands(message)
+
+# --- أمر المساعدة (بـ !) ---
+@client.command(name="مساعدة")
+async def help_cmd(ctx):
+    embed = discord.Embed(title="قائمة أوامر السيستم 🏴", color=BLACK_COLOR)
+    embed.add_field(name="الأوامر الإدارية (بدون !)", value="""
+`بنعالي @الشخص` - حظر نهائي
+`طرد @الشخص` - طرد من السيرفر
+`مزعج @الشخص الوقت` - وقت مستقطع (دقائق)
+`انطق @الشخص` - فك الوقت المستقطع
+`مسح العدد` - مسح الشات
+`ر @الشخص @الرتبة` - إعطاء أو سحب رتبة
+    """, inline=False)
+    embed.add_field(name="أوامر عامة", value="`!مساعدة` - يعرض هذه القائمة", inline=False)
+    embed.set_footer(text="System Developed for Meshari")
+    await ctx.send(embed=embed)
 
 token = os.getenv('DISCORD_TOKEN')
 client.run(token)
