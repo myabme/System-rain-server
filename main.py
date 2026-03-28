@@ -14,26 +14,34 @@ invites = {}
 
 @client.event
 async def on_ready():
+    # تحديث قائمة الدعوات عند تشغيل البوت
     for guild in client.guilds:
-        try: invites[guild.id] = await guild.invites()
-        except: pass
-    print(f"✅ سيستم Rain الخاص بـ فهد شغال!")
+        try:
+            invites[guild.id] = await guild.invites()
+        except:
+            pass
+    print(f"✅ سيستم Rain الخاص بـ فهد شغال والترحيب رسالة عادية!")
 
 @client.event
 async def on_member_join(member):
     channel = client.get_channel(WELCOME_CHANNEL_ID)
     if not channel: return
+
+    # نظام معرفة من دعى العضو
     invites_before = invites.get(member.guild.id, [])
     invites_after = await member.guild.invites()
     invites[member.guild.id] = invites_after
-    inviter = "غير معروف"
+    
+    inviter_mention = "غير معروف"
     for invite in invites_before:
         for new_invite in invites_after:
             if invite.code == new_invite.code and invite.uses < new_invite.uses:
-                inviter = invite.inviter.mention
+                inviter_mention = invite.inviter.mention
                 break
-    embed = discord.Embed(description=f"**hey : {member.mention}**\n**by : {inviter}**", color=BLACK_COLOR)
-    await channel.send(embed=embed)
+
+    # رسالة الترحيب (رسالة عادية بدون ايمبد)
+    welcome_msg = f"*hey : {member.mention}*\n*by : {inviter_mention}*"
+    await channel.send(welcome_msg)
 
 # --- نظام الأوامر بدون بريفكس (بدون !) ---
 @client.event
@@ -105,7 +113,6 @@ async def help_cmd(ctx):
 `مسح العدد` - مسح الشات
 `ر @الشخص @الرتبة` - سحب أو إعطاء رتبة
     """, inline=False)
-    # التوقيع ما لمسته
     embed.set_footer(text="Developed by Wilked")
     await ctx.send(embed=embed)
 
