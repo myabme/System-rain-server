@@ -2,48 +2,62 @@ import discord
 from discord.ext import commands
 import datetime
 import os
+import asyncio
 
-# --- الإعدادات ---
+# --- الإعدادات الأساسية لعيون فهد ---
 intents = discord.Intents.all()
 client = commands.Bot(command_prefix="!", intents=intents)
 
 BLACK_COLOR = 0x000001
 WELCOME_CHANNEL_ID = 1453704693770616904 
 
+# قاموس لحفظ الدعوات
 invites = {}
 
 @client.event
 async def on_ready():
-    # تحديث قائمة الدعوات عند تشغيل البوت
+    # تحديث كاش الدعوات لكل السيرفرات عند التشغيل
     for guild in client.guilds:
         try:
             invites[guild.id] = await guild.invites()
         except:
             pass
-    print(f"✅ سيستم Rain الخاص بـ فهد شغال والترحيب رسالة عادية!")
+    print(f"✅ سيستم Rain جاهز وشغال لعيون فهد!")
 
 @client.event
 async def on_member_join(member):
     channel = client.get_channel(WELCOME_CHANNEL_ID)
     if not channel: return
 
-    # نظام معرفة من دعى العضو
-    invites_before = invites.get(member.guild.id, [])
-    invites_after = await member.guild.invites()
-    invites[member.guild.id] = invites_after
+    # ننتظر ثانية وحدة عشان الديسكورد يحدّث بيانات الـ Invite
+    await asyncio.sleep(1)
     
     inviter_mention = "غير معروف"
-    for invite in invites_before:
-        for new_invite in invites_after:
-            if invite.code == new_invite.code and invite.uses < new_invite.uses:
-                inviter_mention = invite.inviter.mention
-                break
+    
+    try:
+        # إذا كان اللي دخل "بوت"، فاللي دخله هو الشخص اللي سوى له أيزورايز
+        if member.bot:
+            async for entry in member.guild.audit_logs(action=discord.AuditLogAction.bot_add, limit=1):
+                inviter_mention = entry.user.mention
+        else:
+            # إذا كان شخص عادي، نقارن الدعوات القديمة بالجديدة
+            invites_before = invites.get(member.guild.id, [])
+            invites_after = await member.guild.invites()
+            invites[member.guild.id] = invites_after
 
-    # رسالة الترحيب (رسالة عادية بدون ايمبد)
+            for invite in invites_before:
+                for new_invite in invites_after:
+                    if invite.code == new_invite.code and invite.uses < new_invite.uses:
+                        inviter_mention = invite.inviter.mention
+                        break
+    except Exception as e:
+        print(f"خطأ في التتبع: {e}")
+
+    # رسالة الترحيب العادية لعيون فهد
     welcome_msg = f"*hey : {member.mention}*\n*by : {inviter_mention}*"
     await channel.send(welcome_msg)
 
-# --- نظام الأوامر بدون بريفكس (بدون !) ---
+# --- نظام الأوامر بدون ! (تكتب الكلمة وبس) ---
 @client.event
 async def on_message(message):
     if message.author == client.user: return
@@ -116,5 +130,6 @@ async def help_cmd(ctx):
     embed.set_footer(text="Developed by Wilked")
     await ctx.send(embed=embed)
 
+# تشغيل البوت بالتوكن اللي في ريلوي
 token = os.getenv('DISCORD_TOKEN')
 client.run(token)
