@@ -4,7 +4,7 @@ import os
 from flask import Flask
 from threading import Thread
 
-# --- واجهة Ráinbot الاحترافية (تعديل أبو مشاري) ---
+# --- واجهة Ráinbot الاحترافية (تحديث Wilked) ---
 app = Flask(__name__)
 
 @app.route('/')
@@ -27,8 +27,6 @@ def home():
             .container { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
             h1 { font-size: 5.5rem; margin: 0; color: #fff; text-shadow: 0 0 10px #fff; font-weight: 900; letter-spacing: 6px; }
             .dev-tag { color: #888; font-size: 0.65rem; font-weight: bold; letter-spacing: 6px; text-transform: uppercase; margin-top: -5px; opacity: 0.5; }
-            .btn-dashboard { margin-top: 55px; padding: 10px 32px; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.4); border-radius: 50px; font-size: 0.95rem; font-weight: bold; cursor: pointer; text-decoration: none; transition: 0.4s; }
-            .btn-dashboard:hover { background: #fff; color: #000; box-shadow: 0 0 20px #fff; }
         </style>
     </head>
     <body>
@@ -37,7 +35,6 @@ def home():
         <div class="container">
             <h1>RÁINBOT</h1>
             <div class="dev-tag">DEVELOPED BY WILKED</div>
-            <a href="/dashboard" class="btn-dashboard">دخول لوحة التحكم</a>
         </div>
         <div class="ocean"><div class="wave"></div></div>
         <script>
@@ -59,86 +56,82 @@ def home():
     </html>
     """
 
-@app.route('/dashboard')
-def dashboard():
-    return """
-    <body style="background:#000; color:#fff; font-family:sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
-        <div style="text-align:center; border:1px solid #333; padding:50px; border-radius:20px; box-shadow: 0 0 20px rgba(255,255,255,0.05);">
-            <h2 style="text-shadow: 0 0 10px #fff; letter-spacing:3px; font-size:1.5rem;">WILKED DASHBOARD</h2>
-            <p style="color:#666; font-size:0.9rem;">قريباً: التحكم الكامل في إعدادات السيرفر</p>
-            <br>
-            <a href="/" style="color:#fff; text-decoration:none; border:1px solid rgba(255,255,255,0.5); padding:6px 18px; border-radius:50px; font-size:0.75rem;">رجوع للرئيسية</a>
-        </div>
-    </body>
-    """
-
 def run():
-    # هذا السطر يحل مشكلة Not Found في ريلواي
+    # حل مشكلة Not Found - ريلواي يحتاج PORT المتغير
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
 Thread(target=run).start()
 
-# --- إعدادات البوت (بدون بادئة وبدون كلمة زاحف) ---
+# --- إعدادات البوت (أوامر Wilked الجديدة) ---
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='', intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
-    print(f'✅ {bot.user.name} متصل الآن!')
+    print(f'✅ {bot.user.name} جاهز للعمل!')
 
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
-    # معالجة الأوامر ككلمات عادية
-    valid_commands = ['مساعدة', 'موقع', 'مسح', 'طرد', 'بند', 'قول']
+    # قائمة الأوامر المسموحة بدون علامات
+    valid_commands = ['مساعدة', 'موقع', 'مسح', 'طرد', 'بنعالي', 'ر', 'قول']
     if message.content.split()[0] in valid_commands:
         await bot.process_commands(message)
 
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument) or isinstance(error, commands.BadArgument):
-        embed = discord.Embed(title="❌ خطأ في الاستخدام", color=0xffffff)
-        embed.description = f"تأكد من كتابة الأمر بشكل صحيح ومنشن العضو.\n\n**مثال:** `{ctx.command.name} @عضو`"
-        await ctx.send(embed=embed, delete_after=10)
-
+# 1. مساعدة
 @bot.command(name="مساعدة")
 async def help_cmd(ctx):
-    embed = discord.Embed(title="🌑 قائمة الأوامر", description="إدارة السيرفر بواسطة **Wilked**", color=0xffffff)
-    embed.add_field(name="🛡️ الإدارة", value="`مسح [عدد]`\n`طرد [@عضو]`\n`بند [@عضو]`", inline=False)
+    embed = discord.Embed(title="🌑 قائمة الأوامر", description="تطوير: **Wilked**", color=0xffffff)
+    embed.add_field(name="🛡️ الإدارة", value="`مسح [عدد]`\n`طرد [@عضو]`\n`بنعالي [@عضو]`\n`ر [@عضو] [اسم الرتبة]`", inline=False)
     embed.add_field(name="🔗 عام", value="`موقع`\n`قول [نص]`", inline=False)
-    embed.set_footer(text="Developed by Wilked")
     await ctx.send(embed=embed)
 
+# 2. موقع (يصلح مشكلة الرابط)
 @bot.command(name="موقع")
 async def site_link(ctx):
-    await ctx.send("🔗 **رابط لوحة التحكم:** https://system-rain-server-production.up.railway.app")
+    url = f"https://{os.environ.get('RAILWAY_STATIC_URL', 'system-rain-server-production.up.railway.app')}"
+    await ctx.send(f"🔗 **رابط الموقع:** {url}")
 
+# 3. مسح
 @bot.command(name="مسح")
 @commands.has_permissions(manage_messages=True)
 async def clear(ctx, amount: int = 5):
     await ctx.channel.purge(limit=amount + 1)
-    await ctx.send(f"✅ تم مسح `{amount}` رسالة.", delete_after=3)
+    await ctx.send(f"✅ تم المسح.", delete_after=2)
 
+# 4. طرد
 @bot.command(name="طرد")
 @commands.has_permissions(kick_members=True)
 async def kick(ctx, member: discord.Member = None):
     if member:
         await member.kick()
-        await ctx.send(f"👤 تم طرد {member.mention}")
+        await ctx.send(f"👤 تم الطرد.")
     else:
-        await ctx.send("منشن العضو اللي تبي تطرده")
+        await ctx.send("منشن الشخص يا وحش!")
 
-@bot.command(name="بند")
+# 5. بنعالي (الباند سابقاً)
+@bot.command(name="بنعالي")
 @commands.has_permissions(ban_members=True)
 async def ban(ctx, member: discord.Member = None):
     if member:
         await member.ban()
-        await ctx.send(f"🚫 تم تبنيد {member.mention}")
+        await ctx.send(f"🚫 بنعالي.")
     else:
-        await ctx.send("منشن العضو اللي تبي تبنده")
+        await ctx.send("منشن الشخص اللي تبي تعطيه بنعالي!")
 
+# 6. ر (إعطاء رتبة)
+@bot.command(name="ر")
+@commands.has_permissions(manage_roles=True)
+async def give_role(ctx, member: discord.Member = None, *, role: discord.Role = None):
+    if member and role:
+        await member.add_roles(role)
+        await ctx.send(f"✅ تم إعطاء رتبة {role.name} لـ {member.mention}")
+    else:
+        await ctx.send("الاستخدام: `ر @عضو @الرتبة`")
+
+# 7. قول
 @bot.command(name="قول")
 async def say(ctx, *, text):
     await ctx.message.delete()
