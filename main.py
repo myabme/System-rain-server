@@ -1,9 +1,10 @@
 import discord
 import os
+import asyncio
 from flask import Flask, request
 from threading import Thread
 
-# --- واجهة الموقع (مطر + صوت + أبيض وأسود) ---
+# --- واجهة الموقع (التصميم اللي طلبته: أبيض وأسود + مطر) ---
 app = Flask(__name__)
 client = discord.Client(intents=discord.Intents.all())
 admin_role_id = None 
@@ -15,7 +16,7 @@ def home():
         <audio id="r" loop><source src="https://www.soundjay.com/nature/rain-01.mp3"></audio>
         <h1 style="letter-spacing:15px;font-size:4rem;">RÁINBOT</h1>
         <a href="/dashboard" style="color:#fff;border:1px solid #fff;padding:10px 40px;text-decoration:none;margin-top:20px;">ENTER DASHBOARD</a>
-        <p style="color:#111;font-size:0.7rem;margin-top:20px;">CLICK FOR RAIN SOUND</p>
+        <p style="color:#222;font-size:0.7rem;margin-top:20px;">CLICK FOR RAIN SOUND</p>
     </body>
     """
 
@@ -27,13 +28,13 @@ def dashboard():
         
         <div style="display:grid;gap:20px;width:90%;max-width:500px;margin-top:30px;">
             <div style="border:1px solid #222;padding:20px;text-align:center;">
-                <h3 style="font-size:0.9rem;">تعيين رتب الإدارة</h3>
-                <input type="text" id="rid" placeholder="Role ID" style="width:80%;padding:10px;background:#111;border:1px solid #333;color:#fff;">
-                <button onclick="fetch('/api/set-role?id='+document.getElementById('rid').value).then(()=>alert('تم الحفظ'))" style="padding:10px 20px;margin-top:10px;background:#fff;border:none;cursor:pointer;font-weight:bold;">SAVE</button>
+                <h3 style="font-size:0.9rem;">تحديد رتب الإدارة</h3>
+                <input type="text" id="rid" placeholder="ID الرتبة هنا" style="width:80%;padding:10px;background:#111;border:1px solid #333;color:#fff;">
+                <button onclick="fetch('/api/set-role?id='+document.getElementById('rid').value).then(()=>alert('✅ تم حفظ الرتبة'))" style="padding:10px 20px;margin-top:10px;background:#fff;border:none;cursor:pointer;font-weight:bold;">SAVE ROLE</button>
             </div>
 
             <div style="border:1px solid #222;padding:20px;text-align:center;">
-                <h3 style="font-size:0.9rem;">إضافة أوامر جديدة</h3>
+                <h3 style="font-size:0.9rem;">إضافة أوامر للسكربت</h3>
                 <button style="width:80%;padding:10px;background:none;border:1px solid #333;color:#333;cursor:not-allowed;">BUILDER SOON</button>
             </div>
 
@@ -41,6 +42,7 @@ def dashboard():
                 <h3 style="letter-spacing:10px;font-size:0.8rem;">SOON...</h3>
             </div>
         </div>
+        <a href="/" style="margin-top:40px;color:#333;text-decoration:none;">BACK</a>
     </body>
     """
 
@@ -50,65 +52,66 @@ def set_role():
     admin_role_id = request.args.get('id')
     return {"status": "ok"}
 
-# --- نظام البوت المباشر ---
+# --- نظام معالجة الأوامر (الآن صار حديد) ---
 @client.event
 async def on_ready():
-    print(f'✅ {client.user} جاهز!')
+    print(f'✅ {client.user} متصل')
 
 @client.event
 async def on_message(message):
     if message.author == client.user: return
     
-    msg = message.content.strip().split()
-    if not msg: return
-    cmd = msg[0]
+    parts = message.content.strip().split()
+    if not parts: return
+    cmd = parts[0]
 
-    # فحص الصلاحية
-    auth = True
+    # فحص الصلاحية (الإدارة فقط)
+    is_admin = True
     if admin_role_id:
         if admin_role_id not in [str(r.id) for r in message.author.roles] and not message.author.guild_permissions.administrator:
-            auth = False
+            is_admin = False
 
-    # 1. أمر مساعدة
-    if cmd == 'مساعدة':
-        emb = discord.Embed(title="🌑 أوامر Ráinbot", color=0xffffff)
-        emb.add_field(name="التحكم", value="`مسح` | `طرد` | `بنعالي` | `ر`", inline=False)
-        emb.add_field(name="عام", value="`قول` | `موقع`", inline=False)
-        await message.channel.send(embed=emb)
-
-    # 2. أمر مسح
-    elif cmd == 'مسح':
-        if not auth: return
-        num = int(msg[1]) if len(msg) > 1 else 5
+    # 1. أمر مسح
+    if cmd == 'مسح':
+        if not is_admin: return await message.channel.send("❌ للإدارة فقط")
+        num = int(parts[1]) if len(parts) > 1 else 5
         await message.channel.purge(limit=num + 1)
         await message.channel.send(f"🧹 تم مسح {num}", delete_after=2)
 
-    # 3. أمر طرد (تم الإصلاح)
+    # 2. أمر طرد (Kick)
     elif cmd == 'طرد':
-        if not auth: return
+        if not is_admin: return await message.channel.send("❌ للإدارة فقط")
         if message.mentions:
             await message.mentions[0].kick()
-            await message.channel.send(f"👤 تم طرد {message.mentions[0].mention}")
-        else: await message.channel.send("منشن الشخص!")
+            await message.channel.send(f"👤 تم طرد العضو {message.mentions[0].mention}")
+        else: await message.channel.send("⚠️ منشن الشخص!")
 
-    # 4. أمر ر (تم الإصلاح)
+    # 3. أمر بنعالي (Ban)
+    elif cmd == 'بنعالي':
+        if not is_admin: return await message.channel.send("❌ للإدارة فقط")
+        if message.mentions:
+            await message.mentions[0].ban()
+            await message.channel.send(f"🚫 بنعالي لـ {message.mentions[0].mention}")
+        else: await message.channel.send("⚠️ منشن الشخص!")
+
+    # 4. أمر ر (Role) - تم ضبطه بدقة
     elif cmd == 'ر':
-        if not auth: return
+        if not is_admin: return await message.channel.send("❌ للإدارة فقط")
         if len(message.mentions) > 0 and len(message.role_mentions) > 0:
             user = message.mentions[0]
             role = message.role_mentions[0]
             await user.add_roles(role)
-            await message.channel.send(f"✅ تم إعطاء {user.mention} رتبة {role.name}")
-        else: await message.channel.send("الاستخدام: `ر @شخص @رتبة`")
+            await message.channel.send(f"✅ تم تسليم رتبة **{role.name}** لـ {user.mention}")
+        else: await message.channel.send("⚠️ الاستخدام: `ر @فلان @رتبة`")
 
     # 5. أمر قول
     elif cmd == 'قول':
         await message.delete()
-        await message.channel.send(" ".join(msg[1:]))
+        await message.channel.send(" ".join(parts[1:]))
 
     # 6. أمر موقع
     elif cmd == 'موقع':
-        url = f"https://{os.environ.get('RAILWAY_STATIC_URL', 'Railway Dashboard')}"
+        url = f"https://{os.environ.get('RAILWAY_STATIC_URL', 'Railway')}"
         await message.channel.send(f"🔗 {url}")
 
 def run():
