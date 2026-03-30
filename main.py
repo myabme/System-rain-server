@@ -4,7 +4,7 @@ import os
 from flask import Flask
 from threading import Thread
 
-# --- واجهة Ráinbot الاحترافية (تحديث Wilked) ---
+# --- واجهة Ráinbot (أبيض وأسود - مطر خفيف) ---
 app = Flask(__name__)
 
 @app.route('/')
@@ -15,126 +15,127 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Ráinbot Dashboard | Wilked</title>
+        <title>Ráinbot Dashboard</title>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;900&display=swap');
-            body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050505; overflow: hidden; font-family: 'Cairo', sans-serif; }
-            .ocean { height: 5%; width: 100%; position: absolute; bottom: 0; left: 0; background: #01579b; z-index: 5; }
-            .wave { background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/85486/wave.svg) repeat-x; position: absolute; top: -198px; width: 6400px; height: 198px; animation: wave 7s cubic-bezier( 0.36, 0.45, 0.63, 0.53) infinite; }
+            
+            body, html { 
+                margin: 0; padding: 0; width: 100%; height: 100%; 
+                background-color: #000; overflow: hidden; 
+                font-family: 'Cairo', sans-serif; color: #fff;
+            }
+
+            /* مطر خفيف جداً */
             .rain { position: absolute; width: 100%; height: 100%; z-index: 1; }
-            .drop { position: absolute; background: rgba(255,255,255,0.08); width: 1px; height: 40px; top: -100px; animation: fall linear infinite; }
-            @keyframes fall { to { transform: translateY(115vh); } }
-            .container { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
-            h1 { font-size: 5.5rem; margin: 0; color: #fff; text-shadow: 0 0 10px #fff; font-weight: 900; letter-spacing: 6px; }
-            .dev-tag { color: #888; font-size: 0.65rem; font-weight: bold; letter-spacing: 6px; text-transform: uppercase; margin-top: -5px; opacity: 0.5; }
+            .drop { 
+                position: absolute; background: rgba(255,255,255,0.15); 
+                width: 1px; height: 20px; top: -100px; 
+                animation: fall linear infinite; 
+            }
+            @keyframes fall { to { transform: translateY(110vh); } }
+
+            .container { 
+                position: relative; z-index: 10; display: flex; 
+                flex-direction: column; align-items: center; 
+                justify-content: center; height: 100vh; text-align: center; 
+            }
+
+            h1 { 
+                font-size: 5rem; margin: 0; color: #fff; 
+                text-shadow: 0 0 15px rgba(255,255,255,0.4); 
+                font-weight: 900; letter-spacing: 8px;
+            }
+
+            .status { font-size: 1rem; color: #666; margin-top: 10px; }
+
+            /* زر دخول الداشبورد */
+            .btn-enter {
+                margin-top: 40px; padding: 12px 40px; 
+                background: transparent; color: #fff; 
+                border: 1px solid #fff; border-radius: 0px; 
+                font-size: 1rem; cursor: pointer; 
+                text-decoration: none; transition: 0.5s;
+                letter-spacing: 2px;
+            }
+            .btn-enter:hover { background: #fff; color: #000; }
         </style>
     </head>
     <body>
-        <audio autoplay loop id="rainAudio"><source src="https://www.soundjay.com/nature/rain-01.mp3" type="audio/mpeg"></audio>
+        <audio autoplay loop id="rainAudio">
+          <source src="https://www.soundjay.com/nature/rain-01.mp3" type="audio/mpeg">
+        </audio>
+
         <div class="rain" id="rain"></div>
+        
         <div class="container">
             <h1>RÁINBOT</h1>
-            <div class="dev-tag">DEVELOPED BY WILKED</div>
+            <p class="status">STATUS: ONLINE & READY</p>
+            <a href="/dashboard" class="btn-enter">ENTER DASHBOARD</a>
         </div>
-        <div class="ocean"><div class="wave"></div></div>
+
         <script>
+            // إنشاء مطر خفيف (عدد قطرات أقل)
             const container = document.getElementById('rain');
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 30; i++) {
                 const drop = document.createElement('div');
                 drop.className = 'drop';
                 drop.style.left = Math.random() * 100 + 'vw';
-                drop.style.animationDuration = (Math.random() * 1.5 + 1.0) + 's';
-                drop.style.animationDelay = Math.random() * 3 + 's';
+                drop.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                drop.style.animationDelay = Math.random() * 5 + 's';
                 container.appendChild(drop);
             }
+
+            // تشغيل الصوت عند أول لمسة للشاشة (ضروري للمتصفحات)
             document.body.addEventListener('click', () => {
                 const audio = document.getElementById('rainAudio');
-                audio.play(); audio.volume = 0.3;
+                audio.play();
+                audio.volume = 0.2; // صوت هادئ جداً
             }, { once: true });
         </script>
     </body>
     </html>
     """
 
+@app.route('/dashboard')
+def dashboard():
+    return """
+    <body style="background:#000; color:#fff; font-family:sans-serif; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; margin:0;">
+        <h2 style="letter-spacing:5px; border-bottom:1px solid #333; padding-bottom:10px;">DASHBOARD CONTROL</h2>
+        <p style="color:#444;">قريباً: جميع أدوات التحكم بالسيرفر هنا</p>
+        <a href="/" style="color:#666; text-decoration:none; margin-top:20px; font-size:0.8rem;">BACK TO HOME</a>
+    </body>
+    """
+
 def run():
-    # حل مشكلة Not Found - ريلواي يحتاج PORT المتغير
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
 Thread(target=run).start()
 
-# --- إعدادات البوت (أوامر Wilked الجديدة) ---
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='', intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
-    print(f'✅ {bot.user.name} جاهز للعمل!')
+    print(f'✅ {bot.user.name} is online!')
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user:
-        return
-    # قائمة الأوامر المسموحة بدون علامات
+    if message.author == bot.user: return
     valid_commands = ['مساعدة', 'موقع', 'مسح', 'طرد', 'بنعالي', 'ر', 'قول']
     if message.content.split()[0] in valid_commands:
         await bot.process_commands(message)
 
-# 1. مساعدة
+# أوامر البوت
 @bot.command(name="مساعدة")
 async def help_cmd(ctx):
-    embed = discord.Embed(title="🌑 قائمة الأوامر", description="تطوير: **Wilked**", color=0xffffff)
-    embed.add_field(name="🛡️ الإدارة", value="`مسح [عدد]`\n`طرد [@عضو]`\n`بنعالي [@عضو]`\n`ر [@عضو] [اسم الرتبة]`", inline=False)
-    embed.add_field(name="🔗 عام", value="`موقع`\n`قول [نص]`", inline=False)
+    embed = discord.Embed(title="🌑 قائمة الأوامر", color=0xffffff)
+    embed.add_field(name="الإدارة", value="`مسح` | `طرد` | `بنعالي` | `ر`", inline=False)
+    embed.add_field(name="عام", value="`موقع` | `قول`", inline=False)
     await ctx.send(embed=embed)
 
-# 2. موقع (يصلح مشكلة الرابط)
 @bot.command(name="موقع")
 async def site_link(ctx):
-    url = f"https://{os.environ.get('RAILWAY_STATIC_URL', 'system-rain-server-production.up.railway.app')}"
-    await ctx.send(f"🔗 **رابط الموقع:** {url}")
-
-# 3. مسح
-@bot.command(name="مسح")
-@commands.has_permissions(manage_messages=True)
-async def clear(ctx, amount: int = 5):
-    await ctx.channel.purge(limit=amount + 1)
-    await ctx.send(f"✅ تم المسح.", delete_after=2)
-
-# 4. طرد
-@bot.command(name="طرد")
-@commands.has_permissions(kick_members=True)
-async def kick(ctx, member: discord.Member = None):
-    if member:
-        await member.kick()
-        await ctx.send(f"👤 تم الطرد.")
-    else:
-        await ctx.send("منشن الشخص يا وحش!")
-
-# 5. بنعالي (الباند سابقاً)
-@bot.command(name="بنعالي")
-@commands.has_permissions(ban_members=True)
-async def ban(ctx, member: discord.Member = None):
-    if member:
-        await member.ban()
-        await ctx.send(f"🚫 بنعالي.")
-    else:
-        await ctx.send("منشن الشخص اللي تبي تعطيه بنعالي!")
-
-# 6. ر (إعطاء رتبة)
-@bot.command(name="ر")
-@commands.has_permissions(manage_roles=True)
-async def give_role(ctx, member: discord.Member = None, *, role: discord.Role = None):
-    if member and role:
-        await member.add_roles(role)
-        await ctx.send(f"✅ تم إعطاء رتبة {role.name} لـ {member.mention}")
-    else:
-        await ctx.send("الاستخدام: `ر @عضو @الرتبة`")
-
-# 7. قول
-@bot.command(name="قول")
-async def say(ctx, *, text):
-    await ctx.message.delete()
-    await ctx.send(text)
+    await ctx.send(f"🔗 رابط الموقع: https://{os.environ.get('RAILWAY_STATIC_URL', 'rainbot.up.railway.app')}")
 
 bot.run(os.getenv('DISCORD_TOKEN'))
