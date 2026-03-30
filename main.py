@@ -53,15 +53,14 @@ def home():
     </html>
     """
 
-def run_web():
-    # الحل الإجباري لريلواي: ربط البورت بشكل صحيح
+def run():
+    # سحب البوت تلقائياً من ريلواي
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
-# تشغيل الموقع
-Thread(target=run_web).start()
+Thread(target=run).start()
 
-# --- إعدادات البوت (تعديل الأوامر) ---
+# --- إعدادات البوت ---
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
@@ -73,28 +72,12 @@ async def on_ready():
 @bot.command(name="موقع")
 async def dashboard(ctx):
     await ctx.message.delete()
-    url = f"https://{os.environ.get('RAILWAY_STATIC_URL', 'rainbot.up.railway.app')}"
-    await ctx.send(f"صفحة RáinBot : {url}")
-
-@bot.command(name="مساعدة")
-async def help_cmd(ctx):
-    await ctx.message.delete()
-    embed = discord.Embed(title="🌑 أوامر Ráinbot", color=0x000000)
-    embed.add_field(name="!موقع", value="لوحة التحكم السينمائية", inline=False)
-    embed.add_field(name="!قول [نص]", value="إرسال رسالة مخفية", inline=False)
-    embed.add_field(name="!مسح [عدد]", value="تنظيف الشات", inline=False)
-    await ctx.send(embed=embed)
+    domain = os.environ.get('RAILWAY_STATIC_URL', 'rainbot.up.railway.app')
+    await ctx.send(f"صفحة RáinBot : https://{domain}")
 
 @bot.command(name="قول")
 async def say(ctx, *, text):
     await ctx.message.delete()
     await ctx.send(text)
 
-@bot.command(name="مسح")
-@commands.has_permissions(manage_messages=True)
-async def clear(ctx, amount: int = 5):
-    await ctx.channel.purge(limit=amount + 1)
-
-# تشغيل البوت
-token = os.getenv('DISCORD_TOKEN')
-bot.run(token)
+bot.run(os.getenv('DISCORD_TOKEN'))
