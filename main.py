@@ -4,7 +4,7 @@ import os
 from flask import Flask
 from threading import Thread
 
-# --- واجهة Ráinbot الاحترافية (الضباب والمطر) ---
+# --- واجهة Ráinbot الاحترافية (ضباب ومطر) ---
 app = Flask(__name__)
 
 @app.route('/')
@@ -53,39 +53,48 @@ def home():
     </html>
     """
 
-def run():
-    # الحل الجذري لمشكلة Not Found:
-    # السيرفر بيسمع لأي بورت يحدده ريلواي تلقائياً
+def run_web():
+    # الحل الإجباري لريلواي: ربط البورت بشكل صحيح
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
-Thread(target=run).start()
+# تشغيل الموقع
+Thread(target=run_web).start()
 
-# --- إعدادات البوت ---
+# --- إعدادات البوت (تعديل الأوامر) ---
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
-    print(f'✅ Ráinbot جاهز للاستخدام')
+    print(f'✅ {bot.user.name} Is Online!')
 
 @bot.command(name="موقع")
 async def dashboard(ctx):
     await ctx.message.delete()
-    # الرابط حقك اللي يظهر في الصورة
-    url = "https://rainbot.up.railway.app"
+    url = f"https://{os.environ.get('RAILWAY_STATIC_URL', 'rainbot.up.railway.app')}"
     await ctx.send(f"صفحة RáinBot : {url}")
 
 @bot.command(name="مساعدة")
 async def help_cmd(ctx):
     await ctx.message.delete()
-    msg = "**🌑 أوامر Ráinbot:**\n• `!موقع`\n• `!قول [نص]`\n• `!مسح [عدد]`"
-    await ctx.send(msg)
+    embed = discord.Embed(title="🌑 أوامر Ráinbot", color=0x000000)
+    embed.add_field(name="!موقع", value="لوحة التحكم السينمائية", inline=False)
+    embed.add_field(name="!قول [نص]", value="إرسال رسالة مخفية", inline=False)
+    embed.add_field(name="!مسح [عدد]", value="تنظيف الشات", inline=False)
+    await ctx.send(embed=embed)
 
 @bot.command(name="قول")
-async def say(ctx, *, message):
+async def say(ctx, *, text):
     await ctx.message.delete()
-    await ctx.send(message)
+    await ctx.send(text)
 
-bot.run(os.getenv('DISCORD_TOKEN'))
+@bot.command(name="مسح")
+@commands.has_permissions(manage_messages=True)
+async def clear(ctx, amount: int = 5):
+    await ctx.channel.purge(limit=amount + 1)
+
+# تشغيل البوت
+token = os.getenv('DISCORD_TOKEN')
+bot.run(token)
