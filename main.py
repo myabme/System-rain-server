@@ -89,6 +89,7 @@ def dashboard():
                 alert(d.message);
             }
         </script>
+        <a href="/" style="margin-top:30px; color:#333; text-decoration:none;">BACK TO HOME</a>
     </body>
     """
 
@@ -100,6 +101,7 @@ def set_role():
 
 # --- إعدادات البوت ---
 intents = discord.Intents.all()
+# استخدمنا بادئة فارغة للسماح بالأوامر المباشرة
 bot = commands.Bot(command_prefix='', intents=intents, help_command=None)
 
 @bot.event
@@ -110,12 +112,14 @@ async def on_ready():
 async def on_message(message):
     if message.author == bot.user: return
     
+    # قائمة الأوامر المعرفة
     cmds = ['مسح', 'طرد', 'بنعالي', 'ر', 'قول', 'موقع', 'مساعدة']
     content = message.content.strip().split()
     if not content: return
     
+    # إذا كانت الكلمة الأولى من ضمن القائمة، يتم تنفيذ الأمر
     if content[0] in cmds:
-        # فحص رتبة الإدارة
+        # فحص رتبة الإدارة (إذا تم تعيينها في الداشبورد)
         if admin_role_id:
             user_roles = [str(r.id) for r in message.author.roles]
             if admin_role_id not in user_roles and not message.author.guild_permissions.administrator:
@@ -123,21 +127,33 @@ async def on_message(message):
         
         await bot.process_commands(message)
 
-# الأوامر المباشرة
+# --- الأوامر المباشرة ---
+
+@bot.command(name="مساعدة")
+async def help_cmd(ctx):
+    embed = discord.Embed(title="🌑 قائمة الأوامر المتاحة", color=0xffffff)
+    embed.add_field(name="🛡️ الإدارة", value="`مسح` | `طرد` | `بنعالي` | `ر`", inline=False)
+    embed.add_field(name="🔗 عام", value="`موقع` | `قول`", inline=False)
+    await ctx.send(embed=embed)
+
 @bot.command(name="مسح")
 async def clear(ctx, amount: int = 5):
     await ctx.channel.purge(limit=amount + 1)
-    await ctx.send("🧹 تم التنظيف", delete_after=2)
+    await ctx.send(f"✅ تم تنظيف {amount} رسالة", delete_after=2)
 
 @bot.command(name="بنعالي")
 async def ban(ctx, member: discord.Member = None):
-    if member: await member.ban(); await ctx.send("🚫 بنعالي.")
+    if member: 
+        await member.ban()
+        await ctx.send(f"🚫 تم طرد {member.mention} بنعالي.")
+    else: await ctx.send("منشن الشخص!")
 
 @bot.command(name="ر")
 async def role(ctx, member: discord.Member = None, role: discord.Role = None):
     if member and role:
         await member.add_roles(role)
-        await ctx.send(f"✅ تم إعطاء رتبة **{role.name}**")
+        await ctx.send(f"✅ تم إعطاء رتبة **{role.name}** لـ {member.mention}")
+    else: await ctx.send("الاستخدام: `ر @عضو @الرتبة`")
 
 @bot.command(name="قول")
 async def say(ctx, *, text):
@@ -146,7 +162,8 @@ async def say(ctx, *, text):
 
 @bot.command(name="موقع")
 async def site(ctx):
-    await ctx.send(f"🔗 رابط الموقع:\nhttps://{os.environ.get('RAILWAY_STATIC_URL', 'check-railway')}")
+    url = f"https://{os.environ.get('RAILWAY_STATIC_URL', 'check-railway-dashboard')}"
+    await ctx.send(f"🔗 **رابط لوحة التحكم:**\n{url}")
 
 def run():
     port = int(os.environ.get("PORT", 8080))
