@@ -4,7 +4,7 @@ import os
 from flask import Flask
 from threading import Thread
 
-# --- واجهة Ráinbot (الموقع الزاحف بصوت المطر) ---
+# --- واجهة Ráinbot (الموقع الزاحف) ---
 app = Flask(__name__)
 
 @app.route('/')
@@ -28,8 +28,6 @@ def home():
             .container { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
             h1 { font-size: 5.5rem; margin: 0; color: #fff; text-shadow: 0 0 10px #fff; font-weight: 900; letter-spacing: 6px; }
             .dev-tag { color: #888; font-size: 0.65rem; font-weight: bold; letter-spacing: 6px; text-transform: uppercase; margin-top: -5px; opacity: 0.5; }
-            .btn-dashboard { margin-top: 55px; padding: 10px 32px; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.4); border-radius: 50px; font-size: 0.95rem; font-weight: bold; cursor: pointer; text-decoration: none; transition: 0.4s; }
-            .btn-dashboard:hover { background: #fff; color: #000; box-shadow: 0 0 20px #fff; }
         </style>
     </head>
     <body>
@@ -38,7 +36,6 @@ def home():
         <div class="container">
             <h1>RÁINBOT</h1>
             <div class="dev-tag">DEVELOPED BY WILKED</div>
-            <a href="/dashboard" class="btn-dashboard">دخول الـ Dashboard الممطرة</a>
         </div>
         <div class="ocean"><div class="wave"></div></div>
         <script>
@@ -60,58 +57,75 @@ def home():
     </html>
     """
 
-@app.route('/dashboard')
-def dashboard():
-    return "<h1>قريباً: Dashboard التحكم الكامل بواسطة Wilked</h1>"
-
 def run():
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
 Thread(target=run).start()
 
-# --- إعدادات البوت (أوامر Wilked الزاحفة) ---
+# --- إعدادات البوت (بدون بادئة !) ---
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
+# خليت الـ Prefix فاضي عشان الأوامر تشتغل ككلمات عادية
+bot = commands.Bot(command_prefix='', intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
     print(f'✅ {bot.user.name} Is Online!')
 
-# 1. أمر مساعدة (معدل وفخم)
+# --- نظام تصحيح الأخطاء الذكي ---
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument) or isinstance(error, commands.BadArgument):
+        if ctx.command.name == "طرد" or ctx.command.name == "بند":
+            embed = discord.Embed(title="❌ خطأ في الاستخدام", color=0xff0000)
+            embed.description = f"يا وحش، لازم تمنشن الشخص عشان أقدر أسوي {ctx.command.name}.\n\n**مثال:** `{ctx.command.name} @عضو`"
+            await ctx.send(embed=embed, delete_after=10)
+    elif isinstance(error, commands.CommandNotFound):
+        # هنا ممكن نضيف نظام اقتراح الأوامر لو كتب كلمة قريبة
+        pass
+
+# 1. أمر مساعدة
 @bot.command(name="مساعدة")
 async def help_cmd(ctx):
-    await ctx.message.delete()
-    embed = discord.Embed(title="🌑 قائمة أوامر Ráinbot", description="تحكم كامل لسيرفرك بواسطة **Wilked**", color=0xffffff)
-    embed.add_field(name="🛡️ الإدارة", value="`!مسح [عدد]` - تنظيف الروم\n`!طرد [@عضو]` - طرد عضو\n`!بند [@عضو]` - حظر عضو", inline=False)
-    embed.add_field(name="🔗 عام", value="`!موقع` - رابط الداشبورد\n`!قول [نص]` - البوت يتكلم", inline=False)
+    embed = discord.Embed(title="🌑 أوامر Ráinbot", description="تحكم كامل بدون علامات - بواسطة **Wilked**", color=0xffffff)
+    embed.add_field(name="🛡️ الإدارة", value="`مسح [عدد]`\n`طرد [@عضو]`\n`بند [@عضو]`", inline=False)
+    embed.add_field(name="🔗 عام", value="`موقع`\n`قول [نص]`", inline=False)
     embed.set_footer(text="Developed by Wilked")
     await ctx.send(embed=embed)
 
-# 2. أمر مسح
+# 2. أمر موقع (معدل عشان يشتغل غصب)
+@bot.command(name="موقع")
+async def site_link(ctx):
+    # بيجيب الرابط اللي أنت حددته في Railway
+    url = f"https://{os.environ.get('RAILWAY_STATIC_URL', 'rainbot-production.up.railway.app')}"
+    await ctx.send(f"🔗 **رابط الداشبورد الخاص بك:** {url}")
+
+# 3. أمر مسح
 @bot.command(name="مسح")
 @commands.has_permissions(manage_messages=True)
 async def clear(ctx, amount: int = 5):
     await ctx.channel.purge(limit=amount + 1)
-    await ctx.send(f"✅ تم تنظيف `{amount}` رسالة بنجاح.", delete_after=3)
+    await ctx.send(f"✅ تم تنظيف `{amount}` رسالة.", delete_after=3)
 
-# 3. أمر طرد (Kick)
+# 4. أمر طرد
 @bot.command(name="طرد")
 @commands.has_permissions(kick_members=True)
-async def kick(ctx, member: discord.Member, *, reason=None):
-    await ctx.message.delete()
-    await member.kick(reason=reason)
-    await ctx.send(f"👤 تم طرد {member.mention} من السيرفر.")
+async def kick(ctx, member: discord.Member = None):
+    if member is None:
+        raise commands.MissingRequiredArgument(param=None)
+    await member.kick()
+    await ctx.send(f"👤 تم طرد {member.mention}")
 
-# 4. أمر بند (Ban)
+# 5. أمر بند
 @bot.command(name="بند")
 @commands.has_permissions(ban_members=True)
-async def ban(ctx, member: discord.Member, *, reason=None):
-    await ctx.message.delete()
-    await member.ban(reason=reason)
-    await ctx.send(f"🚫 تم تبنيد {member.mention} نهائياً.")
+async def ban(ctx, member: discord.Member = None):
+    if member is None:
+        raise commands.MissingRequiredArgument(param=None)
+    await member.ban()
+    await ctx.send(f"🚫 تم تبنيد {member.mention}")
 
-# 5. أمر قول
+# 6. أمر قول
 @bot.command(name="قول")
 async def say(ctx, *, text):
     await ctx.message.delete()
