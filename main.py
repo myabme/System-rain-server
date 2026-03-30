@@ -3,32 +3,44 @@ from discord.ext import commands
 import os
 from flask import Flask
 from threading import Thread
-import logging
 
-# إيقاف رسائل التنبيه المزعجة في الكونسول
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
-
+# --- إعدادات الموقع الفخم ---
 app = Flask(__name__)
 
 @app.route('/')
 def home():
+    # تصميم متوافق مع Safari والجوالات (Responsive)
     return """
-    <body style="background-color: #000; color: #5865F2; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
-        <div style="text-align: center; border: 2px solid #111; padding: 50px; border-radius: 20px; background: #050505; box-shadow: 0 0 20px #5865f233;">
-            <h1 style="font-size: 4em; margin-bottom: 10px;">Ráinbot</h1>
-            <p style="color: #888; font-size: 1.2em;">اللوحة السوداء قيد التشغيل..</p>
-            <div style="background: #5865F2; color: white; padding: 10px 20px; border-radius: 5px; display: inline-block; margin-top: 20px;">Online</div>
+    <!DOCTYPE html>
+    <html lang="ar">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Ráinbot Dashboard</title>
+        <style>
+            body { background-color: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .card { text-align: center; border: 1px solid #222; padding: 40px; border-radius: 15px; background: #0a0a0a; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+            h1 { color: #5865F2; font-size: 2.5rem; margin-bottom: 5px; letter-spacing: 2px; }
+            p { color: #666; margin-bottom: 25px; }
+            .status-btn { background: #5865F2; color: white; padding: 10px 25px; border-radius: 20px; font-weight: bold; text-decoration: none; display: inline-block; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>Ráinbot</h1>
+            <p>The Black Dashboard is Active</p>
+            <div class="status-btn">Online</div>
         </div>
     </body>
+    </html>
     """
 
 def run():
-    # Railway محتاج يسمع للبورت هذا عشان ما يعطي Crash
+    # بورت Railway الإلزامي
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
-# تشغيل السيرفر في الخلفية
+# تشغيل الويب سيرفر في الخلفية
 Thread(target=run).start()
 
 # --- إعدادات البوت ---
@@ -38,38 +50,38 @@ bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
-    print(f'✅ {bot.user.name} Is Running!')
-    await bot.change_presence(activity=discord.Game(name="Ráinbot | !مساعدة"))
-
-@bot.command(name="مساعدة")
-async def help_cmd(ctx):
-    embed = discord.Embed(title="🌑 قائمة أوامر Ráinbot", color=0x000000)
-    embed.add_field(name="!موقع", value="يفتح لك لوحة التحكم السوداء", inline=False)
-    embed.add_field(name="!قول [نص]", value="يرسل كلامك باسم البوت", inline=False)
-    embed.add_field(name="!مسح [عدد]", value="ينظف الشات", inline=False)
-    await ctx.message.delete()
-    await ctx.send(embed=embed)
+    print(f'✅ Ráinbot جاهز للاستخدام يا وحش!')
 
 @bot.command(name="موقع")
 async def dashboard(ctx):
     await ctx.message.delete()
-    # Railway بيعطيك الرابط في المتغير هذا تلقائياً
-    url = os.environ.get('RAILWAY_STATIC_URL', 'انتظر ربط الدومين..')
-    await ctx.send(f"🔗 **لوحة تحكم Ráinbot السوداء:**\nhttps://{url}")
+    
+    # جلب رابط المشروع من Railway
+    # ملاحظة: تأكد من إضافة دومين في Railway (Settings -> Domains)
+    raw_url = os.environ.get('RAILWAY_STATIC_URL', 'rainbot-production.up.railway.app')
+    
+    # التأكد من أن الرابط يبدأ بـ https عشان يفتح في Safari
+    full_url = f"https://{raw_url}"
+    
+    # إرسال الرسالة بالشكل اللي طلبته
+    await ctx.send(f"صفحة RáinBot : {full_url}")
+
+@bot.command(name="مساعدة")
+async def help_cmd(ctx):
+    await ctx.message.delete()
+    msg = (
+        "**🌑 أوامر Ráinbot:**\n"
+        "• `!موقع` : رابط لوحة التحكم.\n"
+        "• `!قول [نص]` : إرسال رسالة.\n"
+        "• `!مسح [عدد]` : تنظيف الشات."
+    )
+    await ctx.send(msg)
 
 @bot.command(name="قول")
 async def say(ctx, *, text):
     await ctx.message.delete()
     await ctx.send(text)
 
-@bot.command(name="مسح")
-@commands.has_permissions(manage_messages=True)
-async def clear(ctx, amount: int = 5):
-    await ctx.channel.purge(limit=amount + 1)
-
-# تشغيل البوت بالتوكن
+# تشغيل البوت
 token = os.getenv('DISCORD_TOKEN')
-if token:
-    bot.run(token)
-else:
-    print("❌ وين التوكن؟ ضيف DISCORD_TOKEN في Variables حقت Railway")
+bot.run(token)
