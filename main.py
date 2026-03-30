@@ -1,89 +1,94 @@
 import discord
 from discord.ext import commands
+import datetime
 import os
 import asyncio
 
-# --- الإعدادات الأساسية لعيون أبو مشاري ---
+# --- الإعدادات الأساسية لعيون فهد ---
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="", intents=intents, help_command=None)
+client = commands.Bot(command_prefix="!", intents=intents)
 
+BLACK_COLOR = 0x000001
 WELCOME_CHANNEL_ID = 1453704693770616904 
+ADMIN_ROLE_ID = 123456789012345678  # <--- حط هنا آيدي الرتبة اللي تبيها تستخدم الأوامر
 
-# --- معالجة الأوامر بالكلمات المباشرة ---
-@bot.event
+invites = {}
+
+@client.event
+async def on_ready():
+    print(f"✅ سيستم Rain جاهز لعيون فهد!")
+
+# --- نظام الأوامر المطور ---
+@client.event
 async def on_message(message):
-    if message.author.bot or not message.guild: return
+    if message.author == client.user: return
     
-    msg = message.content.strip().split()
-    if not msg: return
-    cmd = msg[0]
+    content = message.content.split()
+    if not content: return
+    cmd = content[0]
+    
+    # التحقق هل العضو إداري أو عنده الرتبة الخاصة
+    is_admin = message.author.guild_permissions.administrator or discord.utils.get(message.author.roles, id=ADMIN_ROLE_ID)
 
-    # 1. مسح (مسح 10)
-    if cmd == "مسح":
-        if message.author.guild_permissions.manage_messages:
-            await message.delete()
-            num = int(msg[1]) if len(msg) > 1 else 10
-            await message.channel.purge(limit=num)
-            await message.channel.send(f"🧹 تم مسح {num} رسالة لعيون فهد.", delete_after=2)
+    # 1. أمر بنعالي (بان)
+    if cmd == "بنعالي":
+        if not is_admin: return
+        if not message.mentions:
+            return await message.reply("⚠️ **لازم تمنشن الشخص!**\nمثال: `بنعالي @user`")
+        
+        member = message.mentions[0]
+        try:
+            await member.ban(reason="بنعالي لعيون فهد")
+            await message.channel.send(f"💀 تم إعطاء {member.mention} بنعالي لعيون فهد.")
+        except:
+            await message.channel.send("❌ ما أقدر أطرد هذا الشخص (رتبته أعلى مني).")
 
-    # 2. بنعالي (@منشن)
-    elif cmd == "بنعالي":
-        if message.author.guild_permissions.ban_members:
-            if message.mentions:
-                user = message.mentions[0]
-                await message.delete()
-                await user.ban(reason="بنعالي لعيون فهد")
-                await message.channel.send(f"💀 {user.mention} بنعالي لعيون فهد.", delete_after=3)
+    # 2. أمر طرد (كيك)
+    if cmd == "طرد":
+        if not is_admin: return
+        if not message.mentions:
+            return await message.reply("⚠️ **لازم تمنشن الشخص!**\nمثال: `طرد @user`")
+        
+        member = message.mentions[0]
+        try:
+            await member.kick()
+            await message.channel.send(f"🚪 تم طرد {member.mention} لعيون فهد.")
+        except:
+            await message.channel.send("❌ فشل الطرد، تأكد من الصلاحيات.")
 
-    # 3. طرد (@منشن)
-    elif cmd == "طرد":
-        if message.author.guild_permissions.kick_members:
-            if message.mentions:
-                user = message.mentions[0]
-                await message.delete()
-                await user.kick(reason="طرد لعيون فهد")
-                await message.channel.send(f"🚪 {user.mention} طرد لعيون فهد.", delete_after=3)
+    # 3. أمر ر (رتبة)
+    if cmd == "ر":
+        if not is_admin: return
+        if not message.mentions or not message.role_mentions:
+            return await message.reply("⚠️ **نقص في الأمر!**\nمثال: `ر @user @role`")
+        
+        member = message.mentions[0]
+        role = message.role_mentions[0]
+        try:
+            if role in member.roles:
+                await member.remove_roles(role)
+                await message.channel.send(f"✅ سحبنا {role.name} من {member.mention} لعيون فهد.")
+            else:
+                await member.add_roles(role)
+                await message.channel.send(f"✅ عطينا {role.name} لـ {member.mention} لعيون فهد.")
+        except:
+            await message.channel.send("❌ ما أقدر أعدل رتب هذا الشخص.")
 
-    # 4. ر (@شخص @رتبه)
-    elif cmd == "ر":
-        if message.author.guild_permissions.manage_roles:
-            if message.mentions and message.role_mentions:
-                await message.delete()
-                member, role = message.mentions[0], message.role_mentions[0]
-                if role in member.roles:
-                    await member.remove_roles(role)
-                    await message.channel.send(f"✅ تم سحب رتبة {role.name} من {member.mention}", delete_after=2)
-                else:
-                    await member.add_roles(role)
-                    await message.channel.send(f"✅ تم إعطاء رتبة {role.name} لـ {member.mention}", delete_after=2)
+    # 4. أمر مزعج (تايم أوت)
+    if cmd == "مزعج":
+        if not message.author.guild_permissions.moderate_members: return
+        if not message.mentions:
+            return await message.reply("⚠️ **يا غالي منشن الشخص!**\nمثال: `مزعج @user 10` (الرقم هو الدقائق)")
+        
+        member = message.mentions[0]
+        time_mins = int(content[2]) if len(content) > 2 and content[2].isdigit() else 10
+        try:
+            await member.timeout(datetime.timedelta(minutes=time_mins))
+            await message.channel.send(f"⏳ {member.mention} انصك مزعج لعيون فهد لمدة {time_mins} دقيقة.")
+        except:
+            await message.channel.send("❌ ما أقدر أعطي تايم أوت لهذا الشخص.")
 
-    # 5. قفل (قفل الروم)
-    elif cmd == "قفل":
-        if message.author.guild_permissions.manage_channels:
-            await message.delete()
-            overwrite = message.channel.overwrites_for(message.guild.default_role)
-            overwrite.send_messages = False
-            await message.channel.set_permissions(message.guild.default_role, overwrite=overwrite)
-            await message.channel.send("🔒 تم قفل الروم لعيون فهد.", delete_after=5)
+    await client.process_commands(message)
 
-    # 6. فتح (فتح الروم)
-    elif cmd == "فتح":
-        if message.author.guild_permissions.manage_channels:
-            await message.delete()
-            overwrite = message.channel.overwrites_for(message.guild.default_role)
-            overwrite.send_messages = True
-            await message.channel.set_permissions(message.guild.default_role, overwrite=overwrite)
-            await message.channel.send("🔓 تم فتح الروم لعيون فهد.", delete_after=5)
-
-    await bot.process_commands(message)
-
-# --- نظام الترحيب ---
-@bot.event
-async def on_member_join(member):
-    ch = bot.get_channel(WELCOME_CHANNEL_ID)
-    if ch:
-        await ch.send(f"hey : {member.mention}\nby : <@{member.guild.owner_id}>")
-
-# تشغيل البوت بالتوكن حقك
 token = os.getenv('DISCORD_TOKEN')
-bot.run(token)
+client.run(token)
