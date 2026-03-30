@@ -65,19 +65,19 @@ def dashboard():
         
         <div style="width:90%; max-width:600px; margin-top:30px; display:grid; gap:20px;">
             <div style="border:1px solid #222; padding:20px;">
-                <h3 style="font-size:0.8rem; letter-spacing:2px;">تعيين رتب الإدارة</h3>
-                <input type="text" id="rid" placeholder="Paste Role ID Here" style="width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; margin:10px 0;">
-                <button onclick="save()" style="width:100%; padding:10px; background:#fff; color:#000; border:none; cursor:pointer; font-weight:bold;">CONFIRM ROLE</button>
+                <h3 style="font-size:0.8rem; letter-spacing:2px;">1. تعيين رتب الإدارة</h3>
+                <input type="text" id="rid" placeholder="آيدي الرتبة هنا" style="width:100%; padding:10px; background:#111; border:1px solid #333; color:#fff; margin:10px 0;">
+                <button onclick="save()" style="width:100%; padding:10px; background:#fff; color:#000; border:none; cursor:pointer; font-weight:bold;">CONFIRM</button>
             </div>
 
             <div style="border:1px solid #222; padding:20px;">
-                <h3 style="font-size:0.8rem; letter-spacing:2px;">إضافة أوامر جديدة</h3>
-                <p style="color:#333; font-size:0.7rem;">سيتم ربطها بالسكربت تلقائياً</p>
-                <button style="width:100%; padding:10px; background:none; border:1px solid #333; color:#444; cursor:not-allowed;">BUILDER SOON</button>
+                <h3 style="font-size:0.8rem; letter-spacing:2px;">2. إضافة أوامر السكربت</h3>
+                <p style="color:#444; font-size:0.7rem;">قريباً: التحكم المباشر بالأكواد</p>
+                <button style="width:100%; padding:10px; background:none; border:1px solid #333; color:#222; cursor:not-allowed;">SOON</button>
             </div>
 
             <div style="border:1px solid #111; padding:20px; text-align:center;">
-                <h3 style="font-size:0.8rem; letter-spacing:8px; color:#222;">SOON...</h3>
+                <h3 style="font-size:0.8rem; letter-spacing:8px; color:#111;">SOON...</h3>
             </div>
         </div>
 
@@ -97,63 +97,62 @@ def dashboard():
 def set_role():
     global admin_role_id
     admin_role_id = request.args.get('id')
-    return {"status": "success", "message": "تم تحديد رتبة الإدارة بنجاح"}
+    return {"status": "success", "message": "تم ربط رتبة الإدارة بنجاح!"}
 
-# --- إعدادات البوت ---
+# --- إعدادات البوت (إصلاح شامل) ---
 intents = discord.Intents.all()
-# استخدمنا بادئة فارغة للسماح بالأوامر المباشرة
 bot = commands.Bot(command_prefix='', intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
-    print(f'✅ {bot.user.name} Ready!')
+    print(f'✅ {bot.user.name} متصل وطيران!')
 
 @bot.event
 async def on_message(message):
     if message.author == bot.user: return
     
-    # قائمة الأوامر المعرفة
-    cmds = ['مسح', 'طرد', 'بنعالي', 'ر', 'قول', 'موقع', 'مساعدة']
-    content = message.content.strip().split()
-    if not content: return
+    # قائمة الأوامر المباشرة
+    valid_commands = ['مساعدة', 'مسح', 'طرد', 'بنعالي', 'ر', 'قول', 'موقع']
+    msg = message.content.strip().split()
+    if not msg: return
     
-    # إذا كانت الكلمة الأولى من ضمن القائمة، يتم تنفيذ الأمر
-    if content[0] in cmds:
-        # فحص رتبة الإدارة (إذا تم تعيينها في الداشبورد)
+    # فحص إذا كانت الرسالة تبدأ بأمر من قائمتنا
+    if msg[0] in valid_commands:
+        # فحص الصلاحيات (اختياري لو حددت رتبة من الموقع)
         if admin_role_id:
             user_roles = [str(r.id) for r in message.author.roles]
             if admin_role_id not in user_roles and not message.author.guild_permissions.administrator:
-                return await message.channel.send("❌ رتبتك ما تسمح لك!")
+                return await message.channel.send("❌ عذراً، هذا الأمر مخصص للإدارة فقط!")
         
         await bot.process_commands(message)
 
-# --- الأوامر المباشرة ---
+# --- تعريف الأوامر ---
 
 @bot.command(name="مساعدة")
 async def help_cmd(ctx):
-    embed = discord.Embed(title="🌑 قائمة الأوامر المتاحة", color=0xffffff)
-    embed.add_field(name="🛡️ الإدارة", value="`مسح` | `طرد` | `بنعالي` | `ر`", inline=False)
-    embed.add_field(name="🔗 عام", value="`موقع` | `قول`", inline=False)
+    embed = discord.Embed(title="🌑 قائمة أوامر Ráinbot", description="أوامر التحكم المباشرة بدون بادئة:", color=0xffffff)
+    embed.add_field(name="🛡️ إدارية", value="`مسح [عدد]` | `طرد` | `بنعالي` | `ر`", inline=False)
+    embed.add_field(name="🔗 عامة", value="`موقع` | `قول [نص]`", inline=False)
     await ctx.send(embed=embed)
 
 @bot.command(name="مسح")
 async def clear(ctx, amount: int = 5):
     await ctx.channel.purge(limit=amount + 1)
-    await ctx.send(f"✅ تم تنظيف {amount} رسالة", delete_after=2)
+    await ctx.send(f"🧹 تم مسح {amount} رسالة.", delete_after=3)
 
 @bot.command(name="بنعالي")
 async def ban(ctx, member: discord.Member = None):
-    if member: 
+    if member:
         await member.ban()
         await ctx.send(f"🚫 تم طرد {member.mention} بنعالي.")
-    else: await ctx.send("منشن الشخص!")
+    else: await ctx.send("لازم تمنشن الشخص!")
 
 @bot.command(name="ر")
 async def role(ctx, member: discord.Member = None, role: discord.Role = None):
     if member and role:
         await member.add_roles(role)
-        await ctx.send(f"✅ تم إعطاء رتبة **{role.name}** لـ {member.mention}")
-    else: await ctx.send("الاستخدام: `ر @عضو @الرتبة`")
+        await ctx.send(f"✅ تم تسليم رتبة **{role.name}** للعضو.")
+    else: await ctx.send("الاستخدام: `ر @عضو @رتبة`")
 
 @bot.command(name="قول")
 async def say(ctx, *, text):
@@ -162,13 +161,14 @@ async def say(ctx, *, text):
 
 @bot.command(name="موقع")
 async def site(ctx):
-    url = f"https://{os.environ.get('RAILWAY_STATIC_URL', 'check-railway-dashboard')}"
-    await ctx.send(f"🔗 **رابط لوحة التحكم:**\n{url}")
+    url = f"https://{os.environ.get('RAILWAY_STATIC_URL', 'لوحة التحكم')}"
+    await ctx.send(f"🔗 تفضل رابط الموقع:\n{url}")
 
-def run():
+# تشغيل النظامين
+def run_flask():
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
 if __name__ == "__main__":
-    Thread(target=run).start()
+    Thread(target=run_flask).start()
     bot.run(os.getenv('DISCORD_TOKEN'))
